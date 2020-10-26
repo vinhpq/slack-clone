@@ -3,6 +3,7 @@ import "./ChatInput.css";
 import { useStateValue } from './StateProvider';
 import db from "./firebase";
 import firebase from "firebase";
+import axios from './axios';
 
 function ChatInput({ channelName, channelId }) {
     const [input, setInput] = useState('');
@@ -12,9 +13,18 @@ function ChatInput({ channelName, channelId }) {
         e.preventDefault();
 
         if(channelId) {
-            db.collection('rooms').doc(channelId).collection('messages').add({
+            // NOTE: FIREBASE usage
+            // db.collection('rooms').doc(channelId).collection('messages').add({
+            //     message: input,
+            //     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            //     user: user.displayName,
+            //     userImage: user.photoURL
+            // })
+
+            // NOTE: MERN
+            axios.post(`/new/message?id=${channelId}`, {
                 message: input,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                timestamp: Date.now(),
                 user: user.displayName,
                 userImage: user.photoURL
             })

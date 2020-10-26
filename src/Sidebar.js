@@ -15,17 +15,38 @@ import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import AddIcon from "@material-ui/icons/Add";
 import db from "./firebase";
 import { useStateValue } from './StateProvider';
+import axios from './axios'
+import Pusher from 'pusher-js'
+
+const pusher = new Pusher('bcbbd24c8189caf5d15a', {
+    cluster: 'ap1'
+});
 
 function Sidebar() {
     const [channels, setChannels] = useState([]);
     const [{ user }] = useStateValue();
+
+    const getChannelList = () => {
+        axios.get('/get/channelList').then((res) => {
+            setChannels(res.data)
+        })
+    }
+
     useEffect(() => {
-        db.collection('rooms').onSnapshot(snapshot => (
-            setChannels(snapshot.docs.map(doc => ({
-                id: doc.id,
-                name: doc.data().name
-            })))
-        ))
+        // NOTE: FIREBASE usage
+        // db.collection('rooms').onSnapshot(snapshot => (
+        //     setChannels(snapshot.docs.map(doc => ({
+        //         id: doc.id,
+        //         name: doc.data().name
+        //     })))
+        // ))
+
+        // NOTE: MERN usage
+        getChannelList()
+        const channel = pusher.subscribe('channels');
+        channel.bind('newChannel', function(data){
+            getChannelList()
+        })
     }, []);
 
 

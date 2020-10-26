@@ -7,23 +7,46 @@ import db from "./firebase";
 import { useState, useEffect } from 'react';
 import Message from "./Message";
 import ChatInput from "./ChatInput";
+import axios from './axios'
+import Pusher from 'pusher-js'
+
+const pusher = new Pusher('bcbbd24c8189caf5d15a', {
+    cluster: 'ap1'
+});
 
 function Chat() {
     const { roomId } = useParams();
     const [roomDetails, setRoomDetails] = useState(null);
     const [roomMessages, setRoomMessages] = useState([]);
 
-    useEffect(() => {
-        if(roomId) {
-            db.collection('rooms').doc(roomId)
-            .onSnapshot((snapshot) => setRoomDetails(snapshot.data()))
-        }
+    const getConversation = () => {
+        axios.get(`/get/conversation?id=${roomId}`).then((res) => {
+            setRoomDetails(res.data[0].channelName)
+            setRoomMessages(res.data[0].conversation)
+        })
+    }
 
-        db.collection('rooms')
-        .doc(roomId)
-        .collection('messages')
-        .orderBy('timestamp', 'asc')
-        .onSnapshot((snapshot) => setRoomMessages(snapshot.docs.map(doc => doc.data())))
+    useEffect(() => {
+        // NOTE: FIREBASE usage
+        // if(roomId) {
+        //     db.collection('rooms').doc(roomId)
+        //     .onSnapshot((snapshot) => setRoomDetails(snapshot.data()))
+        // }
+
+        // db.collection('rooms')
+        // .doc(roomId)
+        // .collection('messages')
+        // .orderBy('timestamp', 'asc')
+        // .onSnapshot((snapshot) => setRoomMessages(snapshot.docs.map(doc => doc.data())))
+
+        // NOTE: MERN usage
+        if(roomId) {
+            getConversation()
+            const channel = pusher.subscribe('conversation');
+            channel.bind('newMessage', function(data){
+                getConversation()
+            })
+        }
     }, [roomId]);
 
     // console.log(roomDetails);
@@ -33,7 +56,8 @@ function Chat() {
             <div className="chat__header">
                 <div className="chat__headerLeft">
                     <h4 className="chat__channelName">
-                        <strong>#{roomDetails?.name}</strong>
+                        {/* <strong>#{roomDetails?.name}</strong> */}
+                        <strong>#{roomDetails}</strong>
                         <StarBorderOutlinedIcon />
                     </h4>
                 </div>
@@ -56,7 +80,8 @@ function Chat() {
                 ))} 
             </div>
 
-            <ChatInput channelName={roomDetails?.name} channelId={roomId} />
+            {/* <ChatInput channelName={roomDetails?.name} channelId={roomId} /> */}
+            <ChatInput channelName={roomDetails} channelId={roomId} />
         </div>
     )
 }
